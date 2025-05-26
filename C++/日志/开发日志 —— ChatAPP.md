@@ -68,3 +68,53 @@ std::string Login::validateLogin()
 在这段代码中，很显然2~5不是产生段错误的原因：`res`显然不是数组或缓冲区，也没有进行递归操作，更没有被free()或delete过。通过之前`MYSQL_RES *res`这个语句可以看出res这个指针违背初始化，而在`auto res = (*mysql_db)->Query(query)`这个语句中，res被重复定义，不是if外的这个res，而`mysql_fetch_row()`这个函数对res进行操作，显然会产生段错误，因为对于这个函数而言res是未初始化的指针。将auto删掉后，程序就可以顺利跑通了。
 
 至此，这个bug就完美的解决了。
+
+# 25.5.25
+## 使用共享库别只写函数声明
+这是一个隐蔽的bug，并且在之前也有出现过，但直到现在才发现并解决。先来看下make编译时的错误：
+![[image 25.5.25 -1.png]]
+这个链接错误表明客户端程序无法找到 `UserFunction` 类中几个方法的实现。现在再来看看项目结构：
+![[image 25.5.25 - 2.png]]
+这样看下来，在项目中确实有UserFunction这个类，而且报错中表明找得到这个类的源文件。
+接下来看看代码：
+```
+// UserFunction.h 
+#ifndef USERFUNCTION_H
+#define USERFUNCTION_H
+#include <string>
+
+namespace UserFunction {
+    std::string login();
+    std::string registerUser();
+    std::string sendMsg();
+    std::string addFriend();
+    std::string logout();
+};
+
+#endif //USERFUNCTION_H
+```
+
+```
+// UserFunciont.cpp
+#include "UserFunction.h"
+#include "LoginReq.h"
+#include <iostream>
+
+std::string UserFunction::login() {
+   ...
+    return req;
+}
+```
+
+看上去代码并没有什么大问题（虽然比较简陋），但实则是这个bug的罪魁祸首。
+首先运行`nm -gC lib/libChatLib.so | grep UserFunction`来查看一下导出的符号
+![[image 25.5.25 - 3.png]]
+发现在这个静态库中只有`UserFunction::login`这一个符号，但链接器仍然找不到其他几个函数（`registerUser`, `sendMsg`, `addFriend`, `logout`）。
+这说明其他函数有以下未被导出的可能：
+- 未在头文件中正确定义（缺少 `[abi:cxx11]` 标记）
+- 在实现文件中未被正确定义（如拼写错误或未实现）
+- 被编译器优化或内联了（检查是否声明为 `static` 或 `inline`）
+
+现在，问题就比较明显了，显然是在源文件中并未实现，在写出空实现后，再运行`nm -gC lib/libChatLib.so | grep UserFunction`来查看导出的符号
+![[image 25.5.25 - 4.png]]
+这样，所有符号就都有了，编译也顺利通过。
