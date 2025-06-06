@@ -8,7 +8,7 @@
 - 常对象只能调用常函数
 
 示例：
-```
+```cpp
 #include <iostream>
 using namespace std;
 
@@ -39,7 +39,7 @@ const成员函数的限制
 mutable关键字的作用
 mutable仅适用于非静态数据成员，且需在声明时指定。
 示例：
-```
+```cpp
 class Counter {
 public:
     mutable int count;  // 允许在const函数中修改
@@ -50,7 +50,7 @@ public:
 const对象的限制
 常对象（const Person obj;）只能调用const成员函数，且不能初始化非const成员变量。
 示例：
-```
+```cpp
 const Person obj;
 obj.showClass();  // 正确（若showClass是const）
 obj.m_A = 200;    // 错误（m_A未声明为mutable）
@@ -58,7 +58,7 @@ obj.m_A = 200;    // 错误（m_A未声明为mutable）
 
 const成员函数的返回值
 若返回指针或引用，需确保其指向的数据不会被修改。例如：
-```
+```cpp
 const int* getVal() const { return &m_val; }  // 安全，因m_val不可变
 ```
 

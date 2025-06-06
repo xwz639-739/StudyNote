@@ -26,7 +26,7 @@ core文件的默认文件名为core，可以`cat /proc/sys/kernel/core_pattern`�
 	2. 使用`__attribute__((noinline))`防止关键函数被内联
 
 然而，不幸的是，这次程序的bug并非如此简单。首先来看错误代码：
-```
+```cpp
 std::string Login::validateLogin()
 {
 	MysqlConnGuard mysql_db;
@@ -77,7 +77,7 @@ std::string Login::validateLogin()
 ![[image 25.5.25 - 2.png]]
 这样看下来，在项目中确实有UserFunction这个类，而且报错中表明找得到这个类的源文件。
 接下来看看代码：
-```
+```cpp
 // UserFunction.h 
 #ifndef USERFUNCTION_H
 #define USERFUNCTION_H
@@ -94,7 +94,7 @@ namespace UserFunction {
 #endif //USERFUNCTION_H
 ```
 
-```
+```cpp
 // UserFunciont.cpp
 #include "UserFunction.h"
 #include "LoginReq.h"
